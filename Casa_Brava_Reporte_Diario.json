@@ -1,0 +1,108 @@
+{
+  "name": "Casa Brava - Reporte diario",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 21,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "a1a1a1a1-0001-4001-8001-000000000001",
+      "name": "Schedule Trigger - 21hs",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [280, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "PON_AQUI_TU_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Casa Brava Reservas"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Reservas",
+          "mode": "list",
+          "cachedResultName": "Reservas"
+        },
+        "options": {}
+      },
+      "id": "a1a1a1a1-0002-4001-8001-000000000002",
+      "name": "Leer reservas de Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Arma el resumen del dia con las reservas registradas hoy\nconst hoy = new Date();\nconst hoyStr = hoy.toISOString().slice(0, 10); // YYYY-MM-DD\n\nconst filas = items.map(i => i.json);\n\n// Filtra solo las filas cuya \"Fecha Registro\" es de hoy\nconst deHoy = filas.filter(f => {\n  const fecha = (f['Fecha Registro'] || '').toString();\n  return fecha.startsWith(hoyStr);\n});\n\nlet cuerpo;\n\nif (deHoy.length === 0) {\n  cuerpo = `No entraron reservas nuevas hoy (${hoyStr}).`;\n} else {\n  const lineas = deHoy.map(f => {\n    return `- ${f['Nombre'] || 'Sin nombre'} | ${f['Servicio'] || '-'} | Fecha reserva: ${f['Fecha Reserva'] || '-'} | Noches: ${f['Noches'] || '-'} | Personas: ${f['Personas'] || '-'} | Tel: ${f['Teléfono'] || '-'} | Codigo: ${f['Código Reserva'] || '-'}`;\n  });\n\n  cuerpo = `Reservas registradas hoy (${hoyStr}): ${deHoy.length}\\n\\n` + lineas.join('\\n');\n}\n\nreturn [{ json: { asunto: `Resumen de reservas Casa Brava - ${hoyStr}`, cuerpo } }];"
+      },
+      "id": "a1a1a1a1-0003-4001-8001-000000000003",
+      "name": "Armar resumen del dia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "consultas.casabrava@gmail.com",
+        "subject": "={{$json.asunto}}",
+        "message": "={{$json.cuerpo}}",
+        "options": {}
+      },
+      "id": "a1a1a1a1-0004-4001-8001-000000000004",
+      "name": "Mandar mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 21hs": {
+      "main": [
+        [
+          {
+            "node": "Leer reservas de Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer reservas de Sheets": {
+      "main": [
+        [
+          {
+            "node": "Armar resumen del dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar resumen del dia": {
+      "main": [
+        [
+          {
+            "node": "Mandar mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

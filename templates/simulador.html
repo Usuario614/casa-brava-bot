@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Casa Brava - Simulador de WhatsApp</title>
+  <style>
+    body {
+      font-family: -apple-system, Arial, sans-serif;
+      max-width: 480px;
+      margin: 40px auto;
+      background: #f2ede4;
+      color: #1c2b3a;
+      padding: 0 16px;
+    }
+    h1 { font-size: 1.3rem; }
+    .chat {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      min-height: 60px;
+    }
+    .bubble-cliente, .bubble-bot {
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      max-width: 85%;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .bubble-cliente {
+      background: #d9f2ea;
+      margin-left: auto;
+      text-align: right;
+    }
+    .bubble-bot {
+      background: #eef1f5;
+      margin-right: auto;
+    }
+    label { font-size: 0.8rem; color: #55606b; display:block; margin-top: 10px; }
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 14px;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #e8603c;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .hint { font-size: 0.72rem; color: #8a8f94; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>🌊 Casa Brava — Simulador de WhatsApp</h1>
+  <p class="hint">Esto simula lo que pasaría si alguien te escribiera por WhatsApp. Escribí un mensaje como si fueras un cliente.</p>
+
+  <div class="chat">
+    {% if ultimo_mensaje %}
+      <div class="bubble-cliente"><strong>{{ ultimo_nombre }}:</strong><br>{{ ultimo_mensaje }}</div>
+    {% endif %}
+    {% if respuesta %}
+      <div class="bubble-bot"><strong>Bot Casa Brava:</strong><br>{{ respuesta }}</div>
+    {% endif %}
+  </div>
+
+  <form method="POST" action="/simular">
+    <label for="nombre">Tu nombre (simulado)</label>
+    <input type="text" id="nombre" name="nombre" placeholder="Ej: María">
+
+    <label for="mensaje">Mensaje (simulado)</label>
+    <textarea id="mensaje" name="mensaje" rows="3" placeholder="Ej: Oi, vocês têm vaga pro dia 5 de setembro?"></textarea>
+
+    <button type="submit">Enviar mensaje simulado</button>
+  </form>
+
+  <p class="hint">Probá escribir en portugués, español o inglés — más adelante el bot va a reconocer el idioma solo.</p>
+</body>
+</html>

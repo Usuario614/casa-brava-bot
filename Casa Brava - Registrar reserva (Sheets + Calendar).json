@@ -1,0 +1,334 @@
+{
+  "name": "Casa Brava - Registrar reserva (Sheets + Calendar)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "casa-brava-reserva",
+        "options": {}
+      },
+      "id": "476f3f6b-5cb2-4427-8308-51b13414b114",
+      "name": "Webhook - Recibe reserva",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1232,
+        -256
+      ],
+      "webhookId": "casa-brava-reserva",
+      "notes": "Esta MISMA URL la usan dos cosas: el formulario de la landing (submitBooking) y el bot de WhatsApp (app.py). Ambos mandan el mismo formato de datos, solo cambia el campo 'canal'."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza los datos, sin importar si vinieron del formulario web\n// o del bot de WhatsApp. Los dos mandan (al menos) estos campos:\n//   name, service, date, nights, people, message, phone, lang, canal, code\nconst data = $input.first().json.body || {};\n\nconst nights = parseInt(data.nights || '1', 10) || 1;\nlet startDate = '';\nlet endDate = '';\n\nif (data.date) {\n  const start = new Date(data.date + 'T00:00:00');\n  const end = new Date(start);\n  end.setDate(end.getDate() + nights);\n  const fmt = (d) => d.toISOString().slice(0, 10);\n  startDate = fmt(start);\n  endDate = fmt(end);\n}\n\nconst now = new Date();\n\n// El formulario web (submitBooking) todavía no genera código de\n// reserva, así que si no viene ninguno le armamos uno acá mismo\n// para que TODAS las filas del Sheet tengan uno.\nfunction generarCodigo() {\n  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\n  let s = '';\n  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];\n  return 'ARR-' + s;\n}\nconst codigo = data.code || generarCodigo();\n\nreturn [{\n  json: {\n    fechaRegistro: now.toISOString().slice(0, 19).replace('T', ' '),\n    codigoReserva: codigo,\n    nombre: data.name || '',\n    telefono: data.phone || '',\n    servicio: data.service || '',\n    fechaReserva: data.date || '',\n    noches: nights,\n    personas: data.people || '',\n    mensaje: data.message || '',\n    idioma: data.lang || '',\n    canal: data.canal || 'formulario_web',\n    esHospedagem: (data.service === 'Hospedagem'),\n    startDate,\n    endDate,\n    calSummary: 'Reservado - ' + (data.name || 'Cliente') + ' (' + codigo + ')',\n    calDescription: 'Reserva recibida por ' + (data.canal || 'formulario_web') + '.\\nCódigo: ' + codigo +\n      '\\nNombre: ' + (data.name || '') +\n      '\\nTeléfono: ' + (data.phone || '') +\n      '\\nPersonas: ' + (data.people || '') +\n      '\\nServicio: ' + (data.service || '') +\n      (data.message ? ('\\nMensaje: ' + data.message) : '')\n  }\n}];"
+      },
+      "id": "d665d972-ace2-4b64-883f-b8759090cf05",
+      "name": "Normalizar datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1008,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1IBR_cKoeUksT2l7baId1AHQf0WnWcfk5xMhBZRa1AXU",
+          "mode": "list",
+          "cachedResultName": "Casa Brava Reservas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IBR_cKoeUksT2l7baId1AHQf0WnWcfk5xMhBZRa1AXU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Reservas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1IBR_cKoeUksT2l7baId1AHQf0WnWcfk5xMhBZRa1AXU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Fecha Registro": "={{$json.fechaRegistro}}",
+            "Código Reserva": "={{$json.codigoReserva}}",
+            "Nombre": "= {{$json.nombre}}",
+            "Teléfono": "= {{$json.telefono}}",
+            "Servicio": "={{$json.servicio}}",
+            "Fecha Reserva": "={{$json.fechaReserva}}",
+            "Noches": "= {{$json.noches}}",
+            "Personas": "={{$json.personas}}",
+            "Mensaje": "={{$json.mensaje}} ",
+            "Idioma": "= {{$json.idioma}} ",
+            "Canal": "={{$json.canal}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Fecha Registro",
+              "displayName": "Fecha Registro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Código Reserva",
+              "displayName": "Código Reserva",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Teléfono",
+              "displayName": "Teléfono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Servicio",
+              "displayName": "Servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Fecha Reserva",
+              "displayName": "Fecha Reserva",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Noches",
+              "displayName": "Noches",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Personas",
+              "displayName": "Personas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Mensaje",
+              "displayName": "Mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Idioma",
+              "displayName": "Idioma",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Canal",
+              "displayName": "Canal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "3ae2535d-7ffe-4b89-bed0-d64298ab1983",
+      "name": "Guardar en Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -800,
+        -256
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "85sxzS7x6XxzulcK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.esHospedagem}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            },
+            {
+              "leftValue": "={{$json.startDate}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1b3d9fa7-494d-4aa2-915f-7d2dbbe84ab1",
+      "name": "Es hospedagem con fecha?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "9ee7bfbc8664d33999e86fb8c95bf5b5836de0e865ed1a8e77064d05a1fe210d@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "Casa Brava"
+        },
+        "start": "={{$json.startDate}}",
+        "end": "={{$json.endDate}}",
+        "additionalFields": {
+          "description": "={{$json.calDescription}}",
+          "summary": "={{$json.calSummary}}"
+        }
+      },
+      "id": "da452de4-93f1-458b-978b-539fcc1c79d1",
+      "name": "Bloquear fechas en Google Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        -336
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "jF5EGAG8lisflKt2",
+          "name": "Google Calendar account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Guardar en Google Sheets": [
+      {
+        "json": {
+          "name": "First item",
+          "code": 1
+        }
+      },
+      {
+        "json": {
+          "name": "Second item",
+          "code": 2
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook - Recibe reserva": {
+      "main": [
+        [
+          {
+            "node": "Normalizar datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar datos": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Es hospedagem con fecha?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es hospedagem con fecha?": {
+      "main": [
+        [
+          {
+            "node": "Bloquear fechas en Google Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "190536da-e2f4-4a2c-974d-0f47ef26a84f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "02d9e93976fe6439adab50e4f9dc0435c6595779d447c057e224267709ab8be3"
+  },
+  "nodeGroups": [],
+  "id": "iMbGnDSFjM35edgR",
+  "tags": []
+}
